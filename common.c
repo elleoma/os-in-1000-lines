@@ -84,7 +84,9 @@ char *strcpy(char *dst, const char *src) {
     *d++ = *src++;
   *d = '\0';
   return dst;
-}
+} // The strcpy function continues copying even if
+  // src is longer than the memory area of dst. 
+  // This can easily lead to bugs and vulnerabilities
 
 int strcmp(const char *s1, const char *s2) {
   while (*s1 && *s2) {

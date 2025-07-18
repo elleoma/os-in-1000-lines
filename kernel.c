@@ -27,12 +27,17 @@ void putchar(char ch) {
 }
 
 void kernel_main(void) {
-    printf("\n\nHello %s\n", "RETARD!");
-    printf("60 + 9 = %d, %x\n", 60 + 9, 0x1234abcd);
+    // printf("\n\nHello %s\n", "friend :3");
+    // printf("60 + 9 = %d, %x\n", 60 + 9, 0x1234abcd);
+    //
+    // for (;;) {
+    //     __asm__ __volatile__("wfi");
+    // }
+    
+    memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
 
-    for (;;) {
-        __asm__ __volatile__("wfi");
-    }
+    PANIC("BOOOO!!! GET INFECTED WITH BOOTKID YOU SKID! 0x1337h@x0r");
+    printf("you lucky bitch got away\n");
 }
 
 __attribute__((section(".text.boot")))
