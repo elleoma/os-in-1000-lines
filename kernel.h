@@ -58,3 +58,15 @@ struct trap_frame {
         printf("YOU GOT A PANIC ERROR: %s:%d: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__);       \
         while (1) {}                                                                                \
     } while (0)
+
+#define PROCS_MAX 8             // Maximum ammount of processes
+
+#define PROC_UNUSED 0           // Unused processes control structure
+#define PROC_RUNNABLE 1         // Runnable proccess
+
+struct process {
+    int pid;                    // ID of a process
+    int state;                  // State of the process: either PROC_UNUSED or PROC_RUNNABLE
+    vaddr_t sp;                 // Stack pointer
+    uint8_t stack[8192];        // Kernel stack
+};
