@@ -212,6 +212,30 @@ void delay(void) {
         __asm__ __volatile__("nop"); // do nothing
 }
 
+struct process *current_proc;
+struct process *idle_proc;
+
+void yield(void) {
+    // Search for a runnable process
+    struct process *next = idle_proc;
+    for (int i = 0; i < PROCS_MAX; i++) {
+        struct process *proc = &procs[(current_proc->pid + i) % PROCS_MAX];
+        if (proc->state == PROC_RUNNABLE && proc->pid > 0) {
+            next = proc;
+            break;
+        }
+    }
+
+    // Return and continue if there's no other processes running than current one
+    if (next == current_proc)
+        return;
+
+    // Context switch
+    struct process *prev = current_proc;
+    current_proc = next;
+    switch_context(&prev->sp, &next->sp);
+}
+
 struct process *proc_a;
 struct process *proc_b;
 
@@ -219,8 +243,7 @@ void proc_a_entry(void) {
     printf("Start process A\n");
     while (1) {
         putchar('6');
-        switch_context(&proc_a->sp, &proc_b->sp);
-        delay();
+        yield();
     }
 }
 
@@ -228,14 +251,13 @@ void proc_b_entry(void) {
     printf("Start process B\n");
     while (1) {
         putchar('9');
-        switch_context(&proc_b->sp, &proc_a->sp);
-        delay();
+        yield();
     }
 }
 
 void kernel_main(void) {
-    printf("\n\nHello %s\n", "friend :3");
-    printf("60 + 9 = %d, %x\n", 60 + 9, 0x1234abcd);
+    // printf("\n\nHello %s\n", "friend :3");
+    // printf("60 + 9 = %d, %x\n", 60 + 9, 0x1234abcd);
 
     // for (;;) {
     //     __asm__ __volatile__("wfi");
@@ -243,7 +265,13 @@ void kernel_main(void) {
 
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
     
+    printf("\n\n");
+
     WRITE_CSR(stvec, (uint32_t) kernel_entry);
+
+    idle_proc = create_process((uint32_t) NULL);
+    idle_proc->pid = 0; // idle
+    current_proc = idle_proc;
 
     // paddr_t paddr0 = alloc_pages(2);
     // paddr_t paddr1 = alloc_pages(1);
@@ -252,9 +280,9 @@ void kernel_main(void) {
 
     proc_a = create_process((uint32_t) proc_a_entry);
     proc_b = create_process((uint32_t) proc_b_entry);
-    proc_a_entry();
 
-    PANIC("Your boot ended successfully :3");
+    yield();
+    PANIC("Switched to idle process");
 
     // __asm__ __volatile__("unimp"); // calls a unimp which triggers kernel panic
     
