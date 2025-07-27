@@ -198,7 +198,7 @@ struct process *create_process(uint32_t pc) {
     // Find an unused proccess control structure
     struct process *proc = NULL;
     int i;
-    for (i = 0; i <= PROCS_MAX; i++) {
+    for (i = 0; i < PROCS_MAX; i++) {
         if (procs[i].state == PROC_UNUSED) {
             proc = &procs[i];
             break;
@@ -262,11 +262,14 @@ void yield(void) {
         return;
 
     __asm__ __volatile__(
+        "sfence.vma\n"
+        "csrw satp, %[satp]\n"
+        "sfence.vma\n"
         "csrw sscratch, %[sscratch]\n"
         :
-        : [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
+        : [satp] "r" (SATP_SV32 | ((uint32_t) next->page_table / PAGE_SIZE)),
+          [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
     );
-
     // Context switch
     struct process *prev = current_proc;
     current_proc = next;
