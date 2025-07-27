@@ -5,6 +5,12 @@ extern char __bss[], __bss_end[], __stack_top[];
 extern char __free_ram[], __free_ram_end[];
 extern char __kernel_base[];
 
+struct process procs[PROCS_MAX];
+struct process *current_proc;
+struct process *idle_proc;
+struct process *proc_a;
+struct process *proc_b;
+
 paddr_t alloc_pages(uint32_t n) {
     static paddr_t next_paddr = (paddr_t) __free_ram;
     paddr_t paddr = next_paddr;
@@ -192,8 +198,6 @@ __attribute__((naked)) void switch_context(uint32_t *prev_sp,
     );
 }
 
-struct process procs[PROCS_MAX];
-
 struct process *create_process(uint32_t pc) {
     // Find an unused proccess control structure
     struct process *proc = NULL;
@@ -243,9 +247,6 @@ void delay(void) {
         __asm__ __volatile__("nop"); // do nothing
 }
 
-struct process *current_proc;
-struct process *idle_proc;
-
 void yield(void) {
     // Search for a runnable process
     struct process *next = idle_proc;
@@ -261,6 +262,9 @@ void yield(void) {
     if (next == current_proc)
         return;
 
+    struct process *prev = current_proc;
+    current_proc = next;
+
     __asm__ __volatile__(
         "sfence.vma\n"
         "csrw satp, %[satp]\n"
@@ -270,14 +274,9 @@ void yield(void) {
         : [satp] "r" (SATP_SV32 | ((uint32_t) next->page_table / PAGE_SIZE)),
           [sscratch] "r" ((uint32_t) &next->stack[sizeof(next->stack)])
     );
-    // Context switch
-    struct process *prev = current_proc;
-    current_proc = next;
+
     switch_context(&prev->sp, &next->sp);
 }
-
-struct process *proc_a;
-struct process *proc_b;
 
 void proc_a_entry(void) {
     printf("Start process A\n");
