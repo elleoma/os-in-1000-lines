@@ -67,6 +67,11 @@ void putchar(char ch) {
     sbi_call(ch, 0, 0, 0, 0, 0, 0, 1 /* Console Putchar */);
 }
 
+long getchar(void) {
+    struct sbiret ret = sbi_call(0, 0, 0, 0, 0, 0, 0, 2);
+    return ret.error;
+}
+
 __attribute__((naked))
 __attribute__((aligned(4)))
 void kernel_entry(void) {
@@ -308,14 +313,40 @@ void proc_b_entry(void) {
     }
 }
 
+void handle_syscall(struct trap_frame *f) {
+    switch (f->a3) {
+        case SYS_GETCHAR:
+            while (1) {
+                long ch = getchar();
+                if (ch >= 0) {
+                    f->a0 = ch;
+                    break;
+                }
+
+                yield();
+            }
+            break;
+        case SYS_PUTCHAR:
+            putchar(f->a0);
+            break;
+        default:
+            PANIC("unexpected syscall a3=%x\n", f->a3);
+    }
+}
+
 void handle_trap(struct trap_frame *f) {
     uint32_t scause = READ_CSR(scause);
     uint32_t stval = READ_CSR(stval);
     uint32_t user_pc = READ_CSR(sepc);
+    if (scause == SCAUSE_ECALL) {
+        handle_syscall(f);
+        user_pc += 4;
+    } else {
+        PANIC("unexpected trap scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
+    }
 
-    PANIC("Unexpected trap: scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
+    WRITE_CSR(sepc, user_pc);
 }
-
 
 void kernel_main(void) {
     // printf("\n\nHello %s\n", "friend :3");
@@ -324,11 +355,8 @@ void kernel_main(void) {
     // for (;;) {
     //     __asm__ __volatile__("wfi");
     // }
-
     memset(__bss, 0, (size_t) __bss_end - (size_t) __bss);
-    
     printf("\n\n");
-
     WRITE_CSR(stvec, (uint32_t) kernel_entry);
 
     idle_proc = create_process(NULL, 0);
@@ -345,8 +373,8 @@ void kernel_main(void) {
 
     // NEW
     create_process(_binary_shell_bin_start, (size_t) _binary_shell_bin_size);
-
     yield();
+
     PANIC("Switched to idle process");
 
     // __asm__ __volatile__("unimp"); // calls a unimp which triggers kernel panic
