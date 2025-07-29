@@ -1,7 +1,7 @@
 ENTRY(start)
 
 SECTIONS {
-    . = 0x10000000;
+    . = 0x1000000;
 
     /* machine code */
     .text :{
