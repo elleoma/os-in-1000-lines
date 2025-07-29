@@ -148,14 +148,6 @@ void kernel_entry(void) {
     );
 }
 
-void handle_trap(struct trap_frame *f) {
-    uint32_t scause = READ_CSR(scause);
-    uint32_t stval = READ_CSR(stval);
-    uint32_t user_pc = READ_CSR(sepc);
-
-    PANIC("Unexpected trap: scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
-}
-
 __attribute__((naked)) void switch_context(uint32_t *prev_sp,
                                            uint32_t *next_sp) {
     __asm__ __volatile__(
@@ -242,11 +234,6 @@ struct process *create_process(uint32_t pc) {
     return proc;
 }
 
-void delay(void) {
-    for (int i = 0; i < 69696969; i++)
-        __asm__ __volatile__("nop"); // do nothing
-}
-
 void yield(void) {
     // Search for a runnable process
     struct process *next = idle_proc;
@@ -293,6 +280,15 @@ void proc_b_entry(void) {
         yield();
     }
 }
+
+void handle_trap(struct trap_frame *f) {
+    uint32_t scause = READ_CSR(scause);
+    uint32_t stval = READ_CSR(stval);
+    uint32_t user_pc = READ_CSR(sepc);
+
+    PANIC("Unexpected trap: scause=%x, stval=%x, sepc=%x\n", scause, stval, user_pc);
+}
+
 
 void kernel_main(void) {
     // printf("\n\nHello %s\n", "friend :3");
