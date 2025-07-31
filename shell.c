@@ -22,6 +22,8 @@ prompt:
 
         if (strcmp(cmdline, "hello") == 0)
             printf("Hellow :3\n");
+        else if (strcmp(cmdline, "exit") == 0)
+            exit();
         else
             printf("I don't know what is %s yet :(\n", cmdline);
     }
