@@ -3,13 +3,13 @@
 void main(void) {
     while (1) {
 prompt:
-        printf("# > ");
+        printf("> ");
         char cmdline[128];
         for (int i = 0;; i++) {
             char ch = getchar();
             putchar(ch);
             if (i == sizeof(cmdline) - 1) {
-                printf("too much yapping bro :(\n");
+                printf("too much yapping bro\n");
                 goto prompt;
             } else if (ch == '\r') {
                 printf("\n");
@@ -20,10 +20,9 @@ prompt:
             }
         }
 
-        if (strcmp(cmdline, "hello") == 0) {
+        if (strcmp(cmdline, "hello") == 0)
             printf("Hellow :3\n");
-        } else {
-            printf("I don't know what is %s yet :(", cmdline);
-        }
+        else
+            printf("I don't know what is %s yet :(\n", cmdline);
     }
 }
